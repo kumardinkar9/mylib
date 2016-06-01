@@ -4,7 +4,7 @@ require_once 'google-api-php-client/src/Google/autoload.php';
 session_start();
 
 $client = new Google_Client();
-$client->setAuthConfigFile('client_secrets.json');
+$client->setAuthConfigFile('client_secrets.json'); // client secret json file recieved while creating project on google console
 $client->addScope(Google_Service_Analytics::ANALYTICS_READONLY);
 
 /*if($client->isAccessTokenExpired()) {
@@ -38,7 +38,7 @@ if (isset($_SESSION['access_token']) && $_SESSION['access_token']) {
 function getReport(&$analytics) {
 
   // Replace with your view ID. E.g., XXXX.
-  $VIEW_ID = "20527406";
+  $VIEW_ID = "XXXXXXX";
 
   // Create the DateRange object.
   $dateRange = new Google_Service_AnalyticsReporting_DateRange();
