@@ -1,0 +1,30 @@
+.wrapper{
+  width: 500px;
+  margin:0 auto;
+}
+.form-horizontal{
+  margin-top: 20px;
+}
+.form-group {
+  margin-bottom: 10px;
+}
+.form-control{
+  background-color: transparent;
+}
+i.icon {
+  position: absolute;
+  top: 0;
+  right: 15px;
+  height: 100%;
+  background: #ccc;
+  width: 30px;
+  text-align: center;
+  padding-top: 8px;
+  border-radius: 0 5px 5px 0;
+  z-index: -1;
+}
+.output {
+  width: 80%;
+  margin: 0 auto;
+  padding-left: 15px;
+}

@@ -27,7 +27,7 @@ if (isset($_SESSION['access_token']) && $_SESSION['access_token']) {
   $response = getReport($analytics);
 
   // Print the response.
-  printResults($response);
+  //printResults($response);
 
 } else {
   $redirect_uri = 'http://' . $_SERVER['HTTP_HOST'] . '/oauth2callback.php';
@@ -37,41 +37,92 @@ if (isset($_SESSION['access_token']) && $_SESSION['access_token']) {
 
 function getReport(&$analytics) {
 
-  // Replace with your view ID. E.g., XXXX.
-  $VIEW_ID = "20527406";
+  if (isset($_POST['submit'])) {
+    $viewId = $_POST['viewId'];
+    $startDate = $_POST['startDate'];
+    $endDate = $_POST['endDate'];
+    $metrics = $_POST['metrics'];
+    $dimensions = $_POST['dimensions'];
+    $sort = $_POST['sort'];
+    $filters = $_POST['filters'];
+    $segmentValue = $_POST['segment'];
+    $samplingLevel = $_POST['samplingLevel'];
+    $includeEmptyRows = $_POST['includeEmptyRows'];
+    $startIndex = $_POST['startIndex'];
+    $maxResults = $_POST['maxResults'];
+    $metrics = explode(',', $metrics);
+    $dimensions = explode(',', $dimensions);
+    $metricArray = array();
+    $prefix = '';
 
-  // Create the DateRange object.
-  $dateRange = new Google_Service_AnalyticsReporting_DateRange();
-  $dateRange->setStartDate("7daysAgo");
-  $dateRange->setEndDate("today");
-  // Create the Metrics object.
-  $sessions = new Google_Service_AnalyticsReporting_Metric();
-  $sessions->setExpression("ga:Sessions");
-  $sessions->setAlias("sessions");
+    // Replace with your view ID. E.g., XXXX.
+    // $VIEW_ID = "20527406";
 
-  // Create the users Metrics object.
-  $users = new Google_Service_AnalyticsReporting_Metric();
-  $users->setExpression("ga:users");
-  $users->setAlias("users");
+    $VIEW_ID = $viewId;
+    $request = new Google_Service_AnalyticsReporting_ReportRequest();
+    $request->setViewId($VIEW_ID);
+    if (!empty($startDate) && !empty($endDate)) {
+      // Create the DateRange object.
+      $dateRange = new Google_Service_AnalyticsReporting_DateRange();
+      $dateRange->setStartDate($startDate);
+      $dateRange->setEndDate($endDate);
+      $request->setDateRanges($dateRange);
+    }
 
-  //Create the browser Dimensions object.
-  $browser = new Google_Service_AnalyticsReporting_Dimension();
-  $browser->setName("ga:browser");
+    if (!empty($metrics)) {
+      foreach($metrics as $key => $value) {
+        if (!empty($value)) {
+          $id = explode(':', $value);
+          $id = $id[1];
+          // Create the Metrics object.
+          $metricValue = new Google_Service_AnalyticsReporting_Metric();
+          $metricValue->setExpression($value);
+          $metricValue->setAlias($id);
+          $metricArray[] = $metricValue;
+        }
+      }
+    }
 
-  //Create the country Dimensions object.
-  $country = new Google_Service_AnalyticsReporting_Dimension();
-  $country->setName("ga:country");
+    if (!empty($dimensions)) {
+      foreach($dimensions as $key => $value) {
+        //Create the Dimensions object.
+        $dimensionValue = new Google_Service_AnalyticsReporting_Dimension();
+        $dimensionValue->setName($value);
+        $dimensionArray [] = $dimensionValue;
 
-  // Create the ReportRequest object.
-  $request = new Google_Service_AnalyticsReporting_ReportRequest();
-  $request->setViewId($VIEW_ID);
-  $request->setDateRanges($dateRange);
-  $request->setMetrics(array($sessions, $users));
-  $request->setDimensions(array($browser, $country));
+        if (!empty($segmentValue)) {
+          // Create the segment dimension.
+          $segmentDimensions = new Google_Service_AnalyticsReporting_Dimension();
+          $segmentDimensions->setName("ga:segment");
+          $segment = new Google_Service_AnalyticsReporting_Segment();
+          $segment->setSegmentId($segmentValue);
+          $dimensionArray [] = $segmentDimensions;
+        }
+      }
+    }
+    else {
+      $dimensionValue = new Google_Service_AnalyticsReporting_Dimension();
+      $dimensionValue->setName('');
+      $dimensionArray = '';
+    }
 
-  $body = new Google_Service_AnalyticsReporting_GetReportsRequest();
-  $body->setReportRequests( array( $request) );
-  return $analytics->reports->batchGet( $body );
+    // Create the ReportRequest object.
+    $request->setDimensions($dimensionArray);
+    if (!empty($segmentValue)) {
+      $request->setSegments(array($segment));
+    }
+    $request->setMetrics($metricArray);
+    if (!empty($includeEmptyRows)) {
+      if ($includeEmptyRows == 'true') {
+        $request->setIncludeEmptyRows(true);
+      }
+    }
+    $body = new Google_Service_AnalyticsReporting_GetReportsRequest();
+    $body->setReportRequests( array( $request) );
+    $reports = $analytics->reports->batchGet( $body );
+
+    return $reports;
+  }
 }
 
 
@@ -105,3 +156,100 @@ function printResults(&$reports) {
 }
 
 ?>
+<!doctype html>
+<html>
+  <head>
+    <title>
+      Google analytics reports
+    </title>
+    <!-- Datepicker styling from jquery ui site -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/custom.css">
+    <!-- Jquery cdn -->
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <!-- Jquery UI cdn -->
+    <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <!-- Custom js import -->
+    <script src="js/custom.js"></script>
+  </head>
+  <body>
+    <div class="wrapper">
+      <h1 class="text-center">Google analytics Reports</h1>
+      <form class="form-horizontal" enctype="multipart/form-data" action="" method="post">
+        <div class="form-group">
+          <label class="col-sm-4 control-label" for="viewId">viewId: </label>
+          <div class="col-sm-8"><input class="form-control" type="text" name="viewId" required /></div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label"  for="startDate">Start Date: </label>
+          <div class="col-sm-8">
+              <input type="text" class="form-control" name="startDate" id="startDate" required />
+              <i class="icon glyphicon glyphicon-calendar"></i>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label"  for="endDate">End Date: </label>
+          <div class="col-sm-8">
+              <input type="text" class="form-control" name="endDate" id="endDate" required />
+              <i class="icon glyphicon glyphicon-calendar"></i>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label"  for="metrics">Metrics: </label>
+          <div class="col-sm-8"><input type="text" class="form-control" name="metrics" required /></div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label"  for="dimensions">Dimensions: </label>
+          <div class="col-sm-8"><input type="text" class="form-control" name="dimensions" /></div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label"  for="sort">Sort: </label>
+          <div class="col-sm-8"><input type="text" class="form-control" name="sort" /></div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label"  for="filters">Filters: </label>
+          <div class="col-sm-8"><input type="text" class="form-control" name="filters" /></div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label"  for="segment">Segment: </label>
+          <div class="col-sm-8"><input type="text" class="form-control" name="segment" /></div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label"  for="samplingLevel">samplingLevel: </label>
+          <div class="col-sm-8"><input type="text" class="form-control" name="samplingLevel" /></div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label"  for="include-empty-rows">include-empty-rows: </label>
+          <div class="col-sm-8">
+            <select name="includeEmptyRows" class="form-control">
+              <option value="true">True</option>
+              <option value="false">False</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label"  for="start-index">start-index: </label>
+          <div class="col-sm-8"><input type="text" class="form-control" name="startIndex" /></div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label"  for="max-results">max-results: </label>
+          <div class="col-sm-8"><input type="text" class="form-control" name="maxResults" /></div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-4 control-label"  ></label>
+          <div class="col-sm-8"><input type="submit" name="submit" value="Submit" class="btn btn-primary"/></div>
+        </div>
+      </form>
+    </div>
+    <?php
+      if (isset($response)) {
+        echo "<pre class='output'>";
+        print(json_encode($response, JSON_PRETTY_PRINT));
+        echo "</pre>";
+      }
+    ?>
+  </body>
+</html>
