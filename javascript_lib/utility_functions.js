@@ -12,4 +12,13 @@ $( "form" ).submit(function( event ) {
   return;
 }
   event.preventDefault();
-});
+)};
+
+// Get current year
+var currentYear = new Date().getFullYear();
+
+// Get timestamp for some other date
+var otherDateTimestamp = Date.parse(new Date('15 Mar'+new Date().getFullYear()))/1000;
+
+// Get current timestamp in seconds
+var currentTimestamp = jQuery.now()/1000;
